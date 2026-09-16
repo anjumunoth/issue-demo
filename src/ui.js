@@ -9,12 +9,24 @@
   };
 
   var taskInput = document.getElementById('taskInput');
+  var dueDateInput = document.getElementById('dueDateInput');
   var addTaskForm = document.getElementById('addTaskForm');
   var taskList = document.getElementById('taskList');
   var taskCount = document.getElementById('taskCount');
   var taskFooter = document.getElementById('taskFooter');
   var clearCompletedBtn = document.getElementById('clearCompleted');
   var filterBtns = document.querySelectorAll('.filter-btn');
+
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  // Formats an ISO date string (YYYY-MM-DD) as e.g. "Sep 20".
+  function formatDueDate(iso) {
+    var parts = iso.split('-');
+    var month = MONTHS[Number(parts[1]) - 1];
+    var day = Number(parts[2]);
+    return month + ' ' + day;
+  }
 
   function render() {
     var visible = TM.filterTasks(state.tasks, state.filter);
@@ -54,6 +66,15 @@
       li.appendChild(checkbox);
       li.appendChild(label);
       li.appendChild(priorityBadge);
+
+      if (task.dueDate) {
+        var overdue = TM.isOverdue(task);
+        var dueBadge = document.createElement('span');
+        dueBadge.className = 'due-badge' + (overdue ? ' overdue' : '');
+        dueBadge.textContent = 'Due: ' + formatDueDate(task.dueDate);
+        li.appendChild(dueBadge);
+      }
+
       li.appendChild(deleteBtn);
       taskList.appendChild(li);
     });
@@ -74,8 +95,11 @@
     var prioritySelect = document.getElementById('prioritySelect');
     var priority = prioritySelect ? prioritySelect.value : 'medium';
 
+    var dueDate = dueDateInput && dueDateInput.value ? dueDateInput.value : null;
+
     try {
-      state.tasks = TM.addTask(state.tasks, text, priority);
+      state.tasks = TM.addTask(state.tasks, text, priority, dueDate);
+      if (dueDateInput) { dueDateInput.value = ''; }
       // BUG: taskInput.value is not reset — text remains after adding
       render();
     } catch (e) {

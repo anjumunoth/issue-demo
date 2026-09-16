@@ -4,6 +4,7 @@ const {
   deleteTask,
   clearCompleted,
   getActiveCount,
+  isOverdue,
   filterTasks
 } = require('../src/taskManager');
 
@@ -143,6 +144,52 @@ describe('getActiveCount', () => {
     tasks = addTask(tasks, 'Task 3');
     tasks = toggleTask(tasks, tasks[0].id); // complete Task 1
     expect(getActiveCount(tasks)).toBe(2);  // FAILS with current bug
+  });
+});
+
+// ── due dates ────────────────────────────────────────────────────────────────
+
+describe('due dates', () => {
+  test('addTask stores the due date as given', () => {
+    const tasks = addTask([], 'Task 1', 'medium', '2026-09-20');
+    expect(tasks[0].dueDate).toBe('2026-09-20');
+  });
+
+  test('due date defaults to null when omitted', () => {
+    const tasks = addTask([], 'Task 1');
+    expect(tasks[0].dueDate).toBeNull();
+  });
+});
+
+// ── isOverdue ────────────────────────────────────────────────────────────────
+
+describe('isOverdue', () => {
+  const now = new Date('2026-09-16T12:00:00');
+
+  test('returns false for a task without a due date', () => {
+    const tasks = addTask([], 'Task 1');
+    expect(isOverdue(tasks[0], now)).toBe(false);
+  });
+
+  test('returns true when the due date is before today', () => {
+    const tasks = addTask([], 'Task 1', 'medium', '2026-09-15');
+    expect(isOverdue(tasks[0], now)).toBe(true);
+  });
+
+  test('returns false when the due date is today', () => {
+    const tasks = addTask([], 'Task 1', 'medium', '2026-09-16');
+    expect(isOverdue(tasks[0], now)).toBe(false);
+  });
+
+  test('returns false when the due date is in the future', () => {
+    const tasks = addTask([], 'Task 1', 'medium', '2026-09-20');
+    expect(isOverdue(tasks[0], now)).toBe(false);
+  });
+
+  test('returns false for a completed task even if past due', () => {
+    let tasks = addTask([], 'Task 1', 'medium', '2026-09-15');
+    tasks = toggleTask(tasks, tasks[0].id);
+    expect(isOverdue(tasks[0], now)).toBe(false);
   });
 });
 

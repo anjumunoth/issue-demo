@@ -11,26 +11,28 @@
     return ++_idCounter;
   }
 
-  function createTask(text, priority) {
+  function createTask(text, priority, dueDate) {
     return {
       id: _nextId(),
       text: text,
       completed: false,
       priority: priority || 'medium',
+      dueDate: dueDate || null,
       createdAt: new Date().toISOString()
     };
   }
 
   /**
    * Returns a new array with the given task appended.
+   * `dueDate` is optional and stored as an ISO date string (YYYY-MM-DD) or null.
    * Throws if text is empty or whitespace-only.
    */
-  function addTask(tasks, text, priority) {
+  function addTask(tasks, text, priority, dueDate) {
     var trimmed = (text || '').trim();
     if (!trimmed) {
       throw new Error('Task text cannot be empty');
     }
-    return tasks.concat([createTask(trimmed, priority)]);
+    return tasks.concat([createTask(trimmed, priority, dueDate)]);
   }
 
   /**
@@ -72,6 +74,33 @@
   }
 
   /**
+   * Formats a Date as an ISO date string (YYYY-MM-DD) in local time.
+   */
+  function _toDateString(date) {
+    var y = date.getFullYear();
+    var m = String(date.getMonth() + 1);
+    var d = String(date.getDate());
+    if (m.length < 2) { m = '0' + m; }
+    if (d.length < 2) { d = '0' + d; }
+    return y + '-' + m + '-' + d;
+  }
+
+  /**
+   * Returns true if the task has a due date that falls before today.
+   * Completed tasks are never considered overdue. Tasks without a due
+   * date are never overdue.
+   * `now` is optional (defaults to the current date) and exists mainly
+   * to make the check deterministic in tests.
+   */
+  function isOverdue(task, now) {
+    if (!task.dueDate || task.completed) {
+      return false;
+    }
+    var today = now ? new Date(now) : new Date();
+    return task.dueDate < _toDateString(today);
+  }
+
+  /**
    * Returns tasks filtered by the given filter string.
    * filter: 'all' | 'active' | 'completed'
    */
@@ -91,6 +120,7 @@
   exports.deleteTask = deleteTask;
   exports.clearCompleted = clearCompleted;
   exports.getActiveCount = getActiveCount;
+  exports.isOverdue = isOverdue;
   exports.filterTasks = filterTasks;
 
 })(typeof module !== 'undefined' ? module.exports : (window.TaskManager = {}));
